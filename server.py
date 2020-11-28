@@ -8,6 +8,23 @@ This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
 
+def find_path_bfs(s, e, grid):
+    queue = [(s, [])]  # start point, empty path
+
+    while len(queue) > 0:
+        node, path = queue.pop(0)
+        path.append(node)
+        mark_visited(node, v)
+
+        if node == e:
+            return path
+
+        adj_nodes = get_neighbors(node, grid)
+        for item in adj_nodes:
+            if not is_visited(item, v):
+                queue.append((item, path[:]))
+
+    return None  # no path found
 
 class Battlesnake(object):
     @cherrypy.expose
@@ -18,7 +35,7 @@ class Battlesnake(object):
         # TIP: If you open your Battlesnake URL in browser you should see this data
         return {
             "apiversion": "1",
-            "author": "",  # TODO: Your Battlesnake Username
+            "author": "stuffbyliang",  # TODO: Your Battlesnake Username
             "color": "#888888",  # TODO: Personalize
             "head": "default",  # TODO: Personalize
             "tail": "default",  # TODO: Personalize
@@ -46,6 +63,9 @@ class Battlesnake(object):
         # Choose a random direction to move in
         possible_moves = ["up", "down", "left", "right"]
         move = random.choice(possible_moves)
+
+        for food in data.food:
+            print(food)
 
         print(f"MOVE: {move}")
         return {"move": move}
