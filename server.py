@@ -1,5 +1,6 @@
 import os
 import random
+import collections
 
 import cherrypy
 
@@ -8,23 +9,26 @@ This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
 
-def find_path_bfs(s, e, grid):
-    queue = [(s, [])]  # start point, empty path
+wall, clear, goal = "#", ".", "*"
+width, height = 11, 11
+board = [[0 for i in range(width)] for j in range(height)]
 
-    while len(queue) > 0:
-        node, path = queue.pop(0)
-        path.append(node)
-        mark_visited(node, v)
+def reset_board(board):
+    board = [[0 for i in range(width)] for j in range(height)]
 
-        if node == e:
+def bfs(grid, start, end):
+    queue = collections.deque([[start]])
+    seen = set([start])
+    while queue:
+        path = queue.popleft()
+        x, y = path[-1]
+        if x == end[0] and y == end[1]:
             return path
-
-        adj_nodes = get_neighbors(node, grid)
-        for item in adj_nodes:
-            if not is_visited(item, v):
-                queue.append((item, path[:]))
-
-    return None  # no path found
+        for x2, y2 in ((x+1,y), (x-1,y), (x,y+1), (x,y-1)):
+            if 0 <= x2 < width and 0 <= y2 < height and grid[y2][x2] != wall and (x2, y2) not in seen:
+                queue.append(path + [(x2, y2)])
+                seen.add((x2, y2))
+    return None
 
 class Battlesnake(object):
     @cherrypy.expose
