@@ -2,6 +2,8 @@ import os
 import random
 import collections
 
+from pprint import pprint
+
 import cherrypy
 
 """
@@ -9,14 +11,44 @@ This is a simple Battlesnake server written in Python.
 For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python/README.md
 """
 
-wall, clear, goal = "#", ".", "*"
-width, height = 11, 11
+wall, clear = 1, 0
+
+width, height = 11,11
 board = [[0 for i in range(width)] for j in range(height)]
 
-def reset_board(board):
-    board = [[0 for i in range(width)] for j in range(height)]
+def get_neighbours(start):
+    return [(start[0] - 1, start[1]), (start[0] + 1, start[1]), (start[0], start[1] - 1), (start[0], start[1] + 1)]
+
+def get_tail(snake):
+    return (snake['body'][len(snake['body']) - 1]['x'], snake['body'][len(snake['body']) - 1]['y'])
+
+def detect_direction(start, end):
+    if end[0] < start[0]:
+        return "left"
+    elif end[0] > start[0]:
+        return "right"
+    
+    if end[1] < start[1]:
+        return "down"
+    elif end[1] > start[1]:
+        return "up"
+    
+    return "WTF"
+
+def update_board(snakes):
+    reset_board()
+    for snake in snakes:
+        for piece in snake['body']:
+            board[piece['y']][piece['x']] = 1
+
+def reset_board():
+    for y in range(height):
+        for x in range(width):
+            board[x][y] = 0
 
 def bfs(grid, start, end):
+    print(start)
+    print(end)
     queue = collections.deque([[start]])
     seen = set([start])
     while queue:
@@ -30,6 +62,13 @@ def bfs(grid, start, end):
                 seen.add((x2, y2))
     return None
 
+def find_move_to(start, end):
+    bfs_result = bfs(board, start, end)
+    if bfs_result is not None and len(bfs_result) > 1:
+        return detect_direction(start, bfs_result[1])
+    return None
+    
+
 class Battlesnake(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
@@ -40,9 +79,9 @@ class Battlesnake(object):
         return {
             "apiversion": "1",
             "author": "stuffbyliang",  # TODO: Your Battlesnake Username
-            "color": "#888888",  # TODO: Personalize
-            "head": "default",  # TODO: Personalize
-            "tail": "default",  # TODO: Personalize
+            "color": "#FFFF00",  # TODO: Personalize
+            "head": "beluga",  # TODO: Personalize
+            "tail": "curled",  # TODO: Personalize
         }
 
     @cherrypy.expose
@@ -68,8 +107,39 @@ class Battlesnake(object):
         possible_moves = ["up", "down", "left", "right"]
         move = random.choice(possible_moves)
 
-        for food in data.food:
-            print(food)
+        update_board(data['board']['snakes'])
+
+        head = (data['you']['head']['x'], data['you']['head']['y'])
+
+        for food in data['board']['food']:
+            food = (food['x'], food['y'])
+            move = find_move_to(head, food)
+            if move is not None:
+                print(f"FOOD MOVE: {move}")
+                return {"move": move}
+
+        # chase other snake's tail
+        for snake in data['board']['snakes']:
+            if (snake['name'] == data['you']['name']):
+                continue
+            move = find_move_to(head, get_tail(snake))
+            if move is not None:
+                print(f"OTHER TAIL MOVE: {move}")
+                return {"move": move}
+
+        # chase own tail
+        move = find_move_to(head, get_tail(data['you']))
+        if move is not None:
+            print(f"SELF TAIL MOVE: {move}")
+            return {"move": move}
+
+        # no good places to go, go to a random place
+        for neighbour in get_neighbours(head):
+            bfs_result = bfs(board, head, neighbour)
+            print(bfs_result)
+            move = detect_direction(head, bfs_result[1])
+            print(f"DANGER MOVE: {move}")
+            return {"move": move}
 
         print(f"MOVE: {move}")
         return {"move": move}
