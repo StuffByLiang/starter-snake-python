@@ -13,7 +13,7 @@ For instructions see https://github.com/BattlesnakeOfficial/starter-snake-python
 
 wall, clear = 1, 0
 
-width, height = 11,11
+width, height = 0, 0
 board = [[0 for i in range(width)] for j in range(height)]
 
 def get_neighbours(start):
@@ -35,13 +35,14 @@ def detect_direction(start, end):
     
     return "WTF"
 
-def update_board(snakes):
-    reset_board()
+def update_board(snakes, width, height):
+    reset_board(width, height)
     for snake in snakes:
         for piece in snake['body']:
             board[piece['y']][piece['x']] = 1
 
-def reset_board():
+def reset_board(width, height):
+    board = [[0 for i in range(width)] for j in range(height)]
     for y in range(height):
         for x in range(width):
             board[x][y] = 0
@@ -107,7 +108,7 @@ class Battlesnake(object):
         possible_moves = ["up", "down", "left", "right"]
         move = random.choice(possible_moves)
 
-        update_board(data['board']['snakes'])
+        update_board(data['board']['snakes'], data['board']['width'], data['board']['height'])
 
         head = (data['you']['head']['x'], data['you']['head']['y'])
 
