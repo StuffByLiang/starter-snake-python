@@ -47,7 +47,27 @@ def reset_board(w, h):
     height = h
     board = [[0 for i in range(width)] for j in range(height)]
 
-def bfs(grid, start, end):
+def bfs_multiple(grid, start, goals):
+    print(start)
+    print(goals)
+    queue = collections.deque([[start]])
+    seen = set([start])
+    goals_set = set(goals)
+
+    result = {}
+
+    while queue:
+        path = queue.popleft()
+        x, y = path[-1]
+        if (x, y) in goals_set:
+            result[(x, y)] = path
+        for x2, y2 in ((x+1,y), (x-1,y), (x,y+1), (x,y-1)):
+            if 0 <= x2 < width and 0 <= y2 < height and grid[y2][x2] != wall and (x2, y2) not in seen:
+                queue.append(path + [(x2, y2)])
+                seen.add((x2, y2))
+    return result
+
+def bfs_single(grid, start, end):
     print(start)
     print(end)
     queue = collections.deque([[start]])
@@ -64,7 +84,7 @@ def bfs(grid, start, end):
     return None
 
 def find_move_to(start, end):
-    bfs_result = bfs(board, start, end)
+    bfs_result = bfs_single(board, start, end)
     if bfs_result is not None and len(bfs_result) > 1:
         return detect_direction(start, bfs_result[1])
     return None
@@ -112,12 +132,24 @@ class Battlesnake(object):
 
         head = (data['you']['head']['x'], data['you']['head']['y'])
 
+        goals = []
         for food in data['board']['food']:
-            food = (food['x'], food['y'])
-            move = find_move_to(head, food)
-            if move is not None:
-                print(f"FOOD MOVE: {move}")
-                return {"move": move}
+            goals.append((food['x'], food['y']))
+        
+        bfs_results = bfs_multiple(board, head, goals)
+
+        if len(bfs_results) > 0:
+            min_path = []
+
+            for goal, path in bfs_results.items():
+                if len(path) < len(min_path) or len(min_path) == 0:
+                    min_goal = goal
+                    min_path = path
+
+            move = detect_direction(head, min_path[1])
+
+            print(f"FOOD MOVE: {move}")
+            return {"move": move}
 
         # chase other snake's tail
         for snake in data['board']['snakes']:
@@ -136,11 +168,11 @@ class Battlesnake(object):
 
         # no good places to go, go to a random place
         for neighbour in get_neighbours(head):
-            bfs_result = bfs(board, head, neighbour)
-            print(bfs_result)
-            move = detect_direction(head, bfs_result[1])
-            print(f"DANGER MOVE: {move}")
-            return {"move": move}
+            bfs_result = bfs_single(board, head, neighbour)
+            if bfs_result is not None:
+                move = detect_direction(head, bfs_result[1])
+                print(f"DANGER MOVE: {move}")
+                return {"move": move}
 
         print(f"MOVE: {move}")
         return {"move": move}
