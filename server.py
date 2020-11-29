@@ -42,6 +42,7 @@ def update_board(snakes, width, height):
             board[piece['y']][piece['x']] = 1
 
 def reset_board(width, height):
+    global width, height, board
     width = width
     height = height
     board = [[0 for i in range(width)] for j in range(height)]
