@@ -41,10 +41,10 @@ def update_board(snakes, width, height):
         for piece in snake['body']:
             board[piece['y']][piece['x']] = 1
 
-def reset_board(width, height):
+def reset_board(w, h):
     global width, height, board
-    width = width
-    height = height
+    width = w
+    height = h
     board = [[0 for i in range(width)] for j in range(height)]
 
 def bfs(grid, start, end):
